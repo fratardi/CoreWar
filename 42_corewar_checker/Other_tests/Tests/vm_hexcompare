@@ -1,0 +1,49 @@
+#!/bin/bash
+
+DUMP=$1
+CHAMPIONS=""
+for arg in "$@"
+do
+	if [$arg != $1]; then
+		$CHAMPIONS += $arg
+		$CHAMPIONS += " "
+	fi
+done
+
+S_PATH="failures/"
+CHECKER_PATH="42_corewar_checker"
+ASM_USR="./asm"
+ASM_42="$CHECKER_PATH/resources/42_asm"
+CHAMPIONS=$@
+COUNT=0
+
+if [ -f "$CHECKER_PATH/colors.sh" ]; then
+	. "$CHECKER_PATH/colors.sh"
+fi
+
+[ $# -lt 1 ] && CHAMPIONS="`find ${S_PATH} -type f -name \"*.s\"`"
+for s_test in "$CHAMPIONS"
+do
+	((COUNT++))
+	[ $COUNT -eq 4 ] && exit
+	asm_file="`echo $s_test | rev | cut -d '.' -f 2- | rev`.cor"
+	usr_res="`echo $s_test | rev | cut -d '.' -f 2- | cut -d '/' -f 1 | rev`_usr.txt"
+	check_res="`echo $s_test | rev | cut -d '.' -f 2- | cut -d '/' -f 1 | rev`_42.txt"
+	printf "${CYAN}${BOLD}Test file :${RESET}\n"
+	printf "\n%s :\n" "`echo $s_test`"
+	cat $s_test
+	printf "\n"
+	$ASM_USR $s_test && hexdump -C $asm_file > $usr_res
+	$ASM_42 $s_test && hexdump -C $asm_file > $check_res
+	printf "\n\n${CYAN}${BOLD}Hexdump -C results saved in $usr_res and $check_res.${RESET}\n"
+	printf "\n${YELLOW}${BOLD}Diff:${RESET}\n"
+	diff="`diff $usr_res $check_res`"
+	printf "$diff"
+	if [[ -z $diff ]]; then
+		printf "(Null Diff)\n${GREEN}${BOLD}✔  Success !${RESET}"
+	else
+		printf "\n${RED}${BOLD}✗ Error ${RESET}"
+	fi
+	printf "\n"
+	printf "\n"
+done
